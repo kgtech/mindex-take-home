@@ -19,7 +19,7 @@ public class DataBootstrapTest {
     private EmployeeRepository employeeRepository;
 
     @Test
-    public void test() {
+    public void test_find_john_lennon() {
         Employee employee = employeeRepository.findByEmployeeId("16a596ae-edd3-4847-99fe-c4518e82c86f");
         assertNotNull(employee);
         assertEquals("John", employee.getFirstName());
