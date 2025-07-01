@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
@@ -45,8 +46,8 @@ public class CompensationServiceImplTest {
 
     @Before
     public void setup() {
-        compensationUrl = "http://localhost:" + port + "/compensation";
-        compensationIdUrl = "http://localhost:" + port + "/compensation/{id}";
+        compensationUrl = "http://localhost:" + port + "/v1/compensation";
+        compensationIdUrl = "http://localhost:" + port + "/v1/compensation/{id}";
     }
 
     private CompensationBuilder compensationBuilder() {
@@ -122,7 +123,6 @@ public class CompensationServiceImplTest {
         assertFalse(deactivated.isActive());
         assertNotNull(deactivated.getEndDate());
     }
-
 
     @Test
     public void testCreateRead() {
@@ -254,7 +254,6 @@ public class CompensationServiceImplTest {
         }
     }
 
-
     @Test
     public void testReadNonExistentEmployee() {
         Optional<Compensation> result = compensationService.read("non-existent-employee");
@@ -277,5 +276,125 @@ public class CompensationServiceImplTest {
             Optional<Compensation> result = compensationService.read(invalidId);
             assertFalse("Should return empty for invalid ID: '" + invalidId + "'", result.isPresent());
         }
+    }
+
+    @Test
+    public void testCreateCompensationEndpoint() {
+        createTestEmployee("endpoint-test-emp-1", "John", "Endpoint");
+        Compensation testCompensation = compensationBuilder()
+                .forEmployee("endpoint-test-emp-1")
+                .withSalary("90000.00")
+                .effectiveFrom(LocalDate.of(2024, 6, 1))
+                .inCurrency("USD")
+                .build();
+
+        ResponseEntity<Compensation> response = restTemplate.postForEntity(
+                compensationUrl, testCompensation, Compensation.class);
+
+        assertEquals("Should return HTTP 201 Created", HttpStatus.CREATED, response.getStatusCode());
+        Compensation createdCompensation = response.getBody();
+        assertCompensationCreatedProperly(createdCompensation);
+        assertCompensationMatches(testCompensation, createdCompensation);
+    }
+
+    @Test
+    public void testReadCompensationEndpoint() {
+        createTestEmployee("endpoint-test-emp-2", "Jane", "Endpoint");
+        Compensation testCompensation = compensationBuilder()
+                .forEmployee("endpoint-test-emp-2")
+                .withSalary("95000.00")
+                .effectiveFrom(LocalDate.of(2024, 6, 15))
+                .build();
+
+        compensationService.create(testCompensation);
+
+        ResponseEntity<Compensation> response = restTemplate.getForEntity(
+                compensationIdUrl, Compensation.class, "endpoint-test-emp-2");
+
+        assertEquals("Should return HTTP 200 OK", HttpStatus.OK, response.getStatusCode());
+        Compensation retrievedCompensation = response.getBody();
+        assertNotNull("Response body should not be null", retrievedCompensation);
+        assertEquals("Employee ID should match", "endpoint-test-emp-2", retrievedCompensation.getEmployeeId());
+        assertEquals("Salary should match", new BigDecimal("95000.00"), retrievedCompensation.getSalary());
+    }
+
+    @Test
+    public void testCreateReadEndpointIntegration() {
+        createTestEmployee("endpoint-test-emp-3", "Bob", "Integration");
+        Compensation testCompensation = compensationBuilder()
+                .forEmployee("endpoint-test-emp-3")
+                .withSalary("100000.00")
+                .effectiveFrom(LocalDate.of(2024, 7, 1))
+                .inCurrency("USD")
+                .build();
+
+        ResponseEntity<Compensation> createResponse = restTemplate.postForEntity(
+                compensationUrl, testCompensation, Compensation.class);
+
+        assertEquals("Create should return HTTP 201 Created", HttpStatus.CREATED, createResponse.getStatusCode());
+        Compensation createdCompensation = createResponse.getBody();
+        assertCompensationCreatedProperly(createdCompensation);
+
+        ResponseEntity<Compensation> readResponse = restTemplate.getForEntity(
+                compensationIdUrl, Compensation.class, "endpoint-test-emp-3");
+
+        assertEquals("Read should return HTTP 200 OK", HttpStatus.OK, readResponse.getStatusCode());
+        Compensation readCompensation = readResponse.getBody();
+        assertEquals("Compensation IDs should match",
+                createdCompensation.getCompensationId(), readCompensation.getCompensationId());
+        assertCompensationMatches(testCompensation, readCompensation);
+    }
+
+    @Test
+    public void testReadNonExistentCompensationEndpoint() {
+        ResponseEntity<Compensation> response = restTemplate.getForEntity(
+                compensationIdUrl, Compensation.class, "non-existent-employee");
+
+        assertEquals("Should return HTTP 404 Not Found", HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNull("Response body should be null for 404", response.getBody());
+    }
+
+    @Test
+    public void testCreateCompensationInvalidEmployeeEndpoint() {
+        Compensation testCompensation = compensationBuilder()
+                .forEmployee("non-existent-employee-endpoint")
+                .withDefaults()
+                .build();
+
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                compensationUrl, testCompensation, String.class);
+
+        assertEquals("Should return HTTP 404 Not Found for invalid employee",
+                HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    public void testCreateCompensationInvalidDataEndpoint() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        createTestEmployee("endpoint-test-invalid", "Invalid", "Test");
+        Compensation invalidCompensation = compensationBuilder()
+                .forEmployee("endpoint-test-invalid")
+                .withSalary(new BigDecimal("-1000.00"))
+                .effectiveFrom(LocalDate.now())
+                .build();
+
+        ResponseEntity<String> invalidResponse = restTemplate.postForEntity(
+                compensationUrl, invalidCompensation, String.class);
+        assertEquals("Should return HTTP 400 Bad Request for invalid salary",
+                HttpStatus.BAD_REQUEST, invalidResponse.getStatusCode());
+    }
+
+    @Test
+    public void testReadEmployeeWithoutCompensationEndpoint() {
+        createTestEmployee("endpoint-test-no-comp", "No", "Compensation");
+
+        ResponseEntity<Compensation> response = restTemplate.getForEntity(
+                compensationIdUrl, Compensation.class, "endpoint-test-no-comp");
+
+        assertEquals("Should return HTTP 404 Not Found for employee without compensation",
+                HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertNull("Response body should be null", response.getBody());
     }
 }
