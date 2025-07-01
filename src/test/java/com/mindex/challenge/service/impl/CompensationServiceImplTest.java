@@ -123,7 +123,6 @@ public class CompensationServiceImplTest {
         assertNotNull(deactivated.getEndDate());
     }
 
-    // === Tests ===
 
     @Test
     public void testCreateRead() {
@@ -185,8 +184,6 @@ public class CompensationServiceImplTest {
         assertEquals(savedSecond.getCompensationId(), activeCompensation.get().getCompensationId());
     }
 
-    // === Exception Tests with assertThrows ===
-
     @Test
     public void testCreateCompensationInvalidEmployee() {
         Compensation testCompensation = compensationBuilder()
@@ -214,7 +211,6 @@ public class CompensationServiceImplTest {
 
     @Test
     public void testCreateCompensationInvalidEmployeeIds() {
-        // Given
         String[] invalidIds = {"", "   "};
 
         for (String invalidId : invalidIds) {

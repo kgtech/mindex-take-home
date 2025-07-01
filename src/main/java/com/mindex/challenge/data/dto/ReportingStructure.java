@@ -1,48 +1,33 @@
 package com.mindex.challenge.data.dto;
 
 import com.mindex.challenge.data.Employee;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+
+import java.util.List;
 
 /**
  * Data Transfer Object representing an employee's reporting structure.
  * Contains the employee information and the total count of all their direct and indirect reports.
- * 
- * Uses full Employee object for reusability as discussed.
- *
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReportingStructure {
     
-    private Employee employee;
+    private EmployeeSummary employee;
     private int numberOfReports;
-    
-    public ReportingStructure() {
-    }
-    
-    public ReportingStructure(Employee employee, int numberOfReports) {
-        this.employee = employee;
-        this.numberOfReports = numberOfReports;
-    }
-    
-    public Employee getEmployee() {
-        return employee;
-    }
-    
-    public void setEmployee(Employee employee) {
-        this.employee = employee;
-    }
-    
-    public int getNumberOfReports() {
-        return numberOfReports;
-    }
-    
-    public void setNumberOfReports(int numberOfReports) {
-        this.numberOfReports = numberOfReports;
-    }
-    
+    private List<DirectReportSummary> directReports;
+
     @Override
     public String toString() {
         return "ReportingStructure{" +
                 "employee=" + employee +
                 ", numberOfReports=" + numberOfReports +
+                ", directReportsCount=" + (directReports != null ? directReports.size() : 0) +
                 '}';
     }
+
 }

@@ -2,14 +2,15 @@ package com.mindex.challenge.service.impl;
 
 import com.mindex.challenge.dao.EmployeeRepository;
 import com.mindex.challenge.data.Employee;
+import com.mindex.challenge.data.dto.DirectReportSummary;
 import com.mindex.challenge.data.dto.EmployeeProjection;
+import com.mindex.challenge.data.dto.EmployeeSummary;
 import com.mindex.challenge.data.dto.ReportingStructure;
 import com.mindex.challenge.service.EmployeeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -76,29 +77,90 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Optional<ReportingStructure> getReportingStructure(String employeeId) {
         LOG.info("Calculating reporting structure for employee [{}]", employeeId);
 
-        // Load the full employee object for the result
         Employee employee = employeeRepository.findByEmployeeId(employeeId);
         if (employee == null) {
             LOG.info("No employee found for employeeId [{}] - returning empty result", employeeId);
             return Optional.empty();
         }
 
+        EmployeeSummary employeeSummary = new EmployeeSummary(employee);
+
+        List<DirectReportSummary> directReportSummaries = createDirectReportSummaries(employee);
+
         long startTime = System.currentTimeMillis();
         int totalReports = calculateReportsIteratively(employeeId);
         long endTime = System.currentTimeMillis();
+
 
         LOG.info("Reporting structure calculation completed for employee [{}]. " +
                         "Total reports: {}, Processing time: {}ms",
                 employeeId, totalReports, (endTime - startTime));
 
-        ReportingStructure reportingStructure = new ReportingStructure(employee, totalReports);
+        ReportingStructure reportingStructure = new ReportingStructure(employeeSummary, totalReports, directReportSummaries);
         return Optional.of(reportingStructure);
+
+    }
+
+    /**
+     * Creates DirectReportSummary objects for the employee's direct reports.
+     * Only includes essential information: employeeId, firstName, lastName, position, and department.
+     * This reduces payload size and provides a clear contract for direct report data.
+     *
+     * @param employee the employee whose direct reports should be converted to summaries
+     * @return list of DirectReportSummary objects, or empty list if no direct reports
+     */
+    private List<DirectReportSummary> createDirectReportSummaries(Employee employee) {
+        if (employee.getDirectReports() == null || employee.getDirectReports().isEmpty()) {
+            LOG.debug("No direct reports found for employee [{}]", employee.getEmployeeId());
+            return new ArrayList<>();
+        }
+
+        LOG.debug("Creating direct report summaries for {} direct reports of employee [{}]",
+                employee.getDirectReports().size(), employee.getEmployeeId());
+
+
+        List<DirectReportSummary> directReportSummaries = new ArrayList<>();
+
+        for (Employee directReport : employee.getDirectReports()) {
+            if (directReport.getEmployeeId() != null) {
+                Employee fullDirectReport = employeeRepository.findByEmployeeId(directReport.getEmployeeId());
+                if (fullDirectReport != null) {
+                    DirectReportSummary summary = new DirectReportSummary(
+                            fullDirectReport.getEmployeeId(),
+                            fullDirectReport.getFirstName(),
+                            fullDirectReport.getLastName(),
+                            fullDirectReport.getPosition(),
+                            fullDirectReport.getDepartment()
+                    );
+                    directReportSummaries.add(summary);
+                    LOG.debug("Created summary for direct report [{}]", directReport.getEmployeeId());
+                } else {
+                    LOG.warn("Could not find full employee data for direct report [{}] - creating partial summary",
+                            directReport.getEmployeeId());
+                    DirectReportSummary partialSummary = new DirectReportSummary(
+                            directReport.getEmployeeId(),
+                            directReport.getFirstName(),
+                            directReport.getLastName(),
+                            directReport.getPosition(),
+                            directReport.getDepartment()
+                    );
+                    directReportSummaries.add(partialSummary);
+                }
+            } else {
+                LOG.warn("Found direct report with null employeeId for employee [{}] - skipping",
+                        employee.getEmployeeId());
+            }
+        }
+
+        LOG.debug("Successfully created {} direct report summaries for employee [{}]",
+                directReportSummaries.size(), employee.getEmployeeId());
+
+        return directReportSummaries;
     }
 
     /**
      * Iterative DFS implementation for calculating total reports.
      * Uses Stack<String> for employee IDs to process and Set<String> for tracking visited employees.
-     *
      * Benefits over recursive approach:
      * - No stack overflow risk (uses heap memory instead of call stack)
      * - Better error handling and monitoring capabilities
@@ -133,19 +195,19 @@ public class EmployeeServiceImpl implements EmployeeService {
             }
         }
 
-        // Iterative DFS traversal
+        // DFS traversal
         while (!employeesToProcess.isEmpty()) {
             String currentEmployeeId = employeesToProcess.pop();
             totalProcessed++;
 
-            // Production safety: Circuit breaker for large hierarchies
+            // Circuit breaker for large hierarchies
             if (totalProcessed > MAX_HIERARCHY_SIZE) {
                 LOG.error("Hierarchy size exceeded maximum limit of {} employees. " +
                         "Stopping traversal for employee [{}]", MAX_HIERARCHY_SIZE, rootEmployeeId);
                 throw new RuntimeException("Employee hierarchy too large to process safely");
             }
 
-            // Production safety: Time-based circuit breaker
+            // Time-based circuit breaker
             long currentTime = System.currentTimeMillis();
             if (currentTime - startTime > MAX_PROCESSING_TIME_MS) {
                 LOG.error("Processing time exceeded maximum limit of {}ms. " +

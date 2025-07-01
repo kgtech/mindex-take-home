@@ -1,7 +1,29 @@
 package com.mindex.challenge.data;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
+/**
+ * Represents an employee in the system with various details such as
+ * personal information, position, department, and reporting structure.
+ * This class also allows representing hierarchical relationships
+ * between employees through the directReports property.
+ *
+ * Features:
+ * - Includes details like firstName, lastName, position, and department.
+ * - Supports hierarchical structure through a list of directReports.
+ *
+ *  An instance of this class can be used to manage and represent
+ * both individual employee details and organizational structure.
+ *
+ * Moved to Lombok annotations to remove boilerplate code
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Employee {
     private String employeeId;
     private String firstName;
@@ -10,54 +32,4 @@ public class Employee {
     private String department;
     private List<Employee> directReports;
 
-    public Employee() {
-    }
-
-    public String getEmployeeId() {
-        return employeeId;
-    }
-
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getPosition() {
-        return position;
-    }
-
-    public void setPosition(String position) {
-        this.position = position;
-    }
-
-    public String getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(String department) {
-        this.department = department;
-    }
-
-    public List<Employee> getDirectReports() {
-        return directReports;
-    }
-
-    public void setDirectReports(List<Employee> directReports) {
-        this.directReports = directReports;
-    }
 }
