@@ -22,60 +22,40 @@ The following endpoints are available to use:
 ```
 * CREATE EMPLOYEE
     * HTTP Method: POST 
-    * URL: localhost:8080/employee
+    * URL: localhost:8090/employee
     * PAYLOAD: Employee
     * RESPONSE: Employee
 
 * GET REPORTING STRUCTURE
     * HTTP Method: GET
-    * URL: localhost:8080/employee/{id}/reportingStructure
+    * URL: localhost:8090/employee/{id}/reportingStructure
     * RESPONSE: ReportingStructure
     
 * READ EMPLOYEE
     * HTTP Method: GET 
-    * URL: localhost:8080/employee/{id}
+    * URL: localhost:8090/employee/{id}
     * RESPONSE: Employee
 * UPDATE EMPLOYEE
     * HTTP Method: PUT 
-    * URL: localhost:8080/employee/{id}
+    * URL: localhost:8090/employee/{id}
     * PAYLOAD: Employee
     * RESPONSE: Employee
     
 * CREATE COMPENSATION
     * HTTP Method: POST
-    * URL: localhost:8080/v1/compensation
+    * URL: localhost:8090/v1/compensation
     * PAYLOAD: Compensation
     * RESPONSE: Compensation
 
 * READ COMPENSATION
     * HTTP Method: GET
-    * URL: localhost:8080/v1/compensation/{employeeId}
+    * URL: localhost:8090/v1/compensation/{employeeId}
     * RESPONSE: Compensation
 
     
 ```
 
-**Get Reporting Structure:**
-```bash
-curl http://localhost:8080/employee/16a596ae-edd3-4847-99fe-c4518e82c86f/reportingStructure
-```
-#### Compensation Operations
 
-**Create Compensation:**
-```bash
-curl -X POST http://localhost:8080/v1/compensation \
--H "Content-Type: application/json" \
--d '{
-"employeeId": "16a596ae-edd3-4847-99fe-c4518e82c86f",
-"salary": 75000.00,
-"currency": "USD",
-"effectiveDate": "2024-01-01"
-}'
-```
-**Get Compensation:**
-```bash
-curl http://localhost:8080/v1/compensation/16a596ae-edd3-4847-99fe-c4518e82c86f
-```
 ### Sample Test Employee IDs
 You can use these pre-loaded employee IDs for testing:
 - **John Lennon**: `16a596ae-edd3-4847-99fe-c4518e82c86f` (4 total reports)
@@ -102,23 +82,61 @@ You can use these pre-loaded employee IDs for testing:
 "employeeId": "03aa1462-ffa9-4978-901b-7c001562cf6f"
 }
 ]
-}```
+}
+```
+
+
+**Get Reporting Structure Request:**
+```bash
+curl http://localhost:8090/employee/16a596ae-edd3-4847-99fe-c4518e82c86f/reportingStructure
+```
 
 **ReportingStructure Response:**
 ```json
 {
-"employee": {
-"employeeId": "16a596ae-edd3-4847-99fe-c4518e82c86f",
-"firstName": "John",
-"lastName": "Lennon",
-"position": "Development Manager",
-"department": "Engineering",
-"directReports": [...]
-},
-"numberOfReports": 4
+  "employee": {
+    "employeeId": "16a596ae-edd3-4847-99fe-c4518e82c86f",
+    "firstName": "John",
+    "lastName": "Lennon",
+    "position": "Development Manager",
+    "department": "Engineering"
+  },
+  "numberOfReports": 4,
+  "directReports": [
+    {
+      "employeeId": "b7839309-3348-463b-a7e3-5de1c168beb3",
+      "firstName": "Paul",
+      "lastName": "McCartney",
+      "position": "Developer I",
+      "department": "Engineering"
+    },
+    {
+      "employeeId": "03aa1462-ffa9-4978-901b-7c001562cf6f",
+      "firstName": "Ringo",
+      "lastName": "Starr",
+      "position": "Developer V",
+      "department": "Engineering"
+    }
+  ]
 }
 ```
+#### Compensation Operations
 
+**Create Compensation:**
+```bash
+curl -X POST http://localhost:8090/v1/compensation \
+-H "Content-Type: application/json" \
+-d '{
+"employeeId": "16a596ae-edd3-4847-99fe-c4518e82c86f",
+"salary": 75000.00,
+"currency": "USD",
+"effectiveDate": "2024-01-01"
+}'
+```
+**Get Compensation:**
+```bash
+curl http://localhost:8090/v1/compensation/16a596ae-edd3-4847-99fe-c4518e82c86f
+```
 **Compensation Response:**
 ```json
 {
