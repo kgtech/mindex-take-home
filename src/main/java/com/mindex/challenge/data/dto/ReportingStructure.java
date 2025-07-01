@@ -1,10 +1,8 @@
 package com.mindex.challenge.data.dto;
 
-import com.mindex.challenge.data.Employee;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 import java.util.List;
 

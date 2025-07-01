@@ -11,14 +11,11 @@ import java.util.List;
  * personal information, position, department, and reporting structure.
  * This class also allows representing hierarchical relationships
  * between employees through the directReports property.
- *
  * Features:
  * - Includes details like firstName, lastName, position, and department.
  * - Supports hierarchical structure through a list of directReports.
- *
  *  An instance of this class can be used to manage and represent
  * both individual employee details and organizational structure.
- *
  * Moved to Lombok annotations to remove boilerplate code
  */
 @Data
